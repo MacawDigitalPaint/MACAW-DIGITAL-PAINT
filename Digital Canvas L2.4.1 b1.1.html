@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Paint Canvas</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/3.0.0/simplex-noise.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+
+    <style>
+      body {
+  padding-bottom: 100px;
+  font-family: Arial, sans-serif;
+    font-weight: bold;
+}
+
+#canvas-container {
+  touch-action: none;
+  overflow-x: hidden;
+
+}
+
+#canvas {
+  border: 1px solid black;
+  background-color: white;
+  cursor: crosshair;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 80px; /* adjust the bottom value to match the height of your controls */
+
+}
+
+#glcanvas {
+  cursor: crosshair;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 80px; /* adjust the bottom value to match the height of your controls */
+
+}
+
+#controls-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background-color: #fff;
+  box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.2);
+  overflow-x: scroll;
+  overflow-y: hidden;
+  width: Max items;
+}
+
+#controls-wrapper {
+  display: flex;
+  width: Max items;
+  height: 80px;
+  background-color: #fff;
+}
+
+#controls {
+  padding-left: 20px;
+  padding-right: 20px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 15px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  background-color: #fff;
+  box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  scrollbar-width: thin; /* for Firefox */
+  height: 80px;
+  background-color: #fff;
+  width: max items;
+}
+
+#controls::-webkit-scrollbar {
+  height: 8px;
+}
+
+#controls::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+#controls button {
+  padding: 16px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#controls button:hover {
+  opacity: 0.8;
+}
+
+#controls input[type="range"] {
+  width: 200px;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.1);
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  margin-top: 3px;
+}
+
+select {
+  font-family: "Helvetica Neue", sans-serif;
+  font-size: 16px;
+}
+
+
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container">
+      <canvas id="canvas"></canvas>
+      <canvas id="glcanvas"></canvas>
+    </div>
+    <div id="controls-container">
+      <div id="controls-wrapper">
+    <div id="controls">
+      <label style = "color: white; -webkit-text-stroke-width: 1px; -webkit-text-stroke-color: pink;" for="toolbar-title">Toolbar (Scroll):</label>
+      <label for="color-picker">Color:</label>
+      <input type="color" id="color-picker" value="#000000" />
+
+      <label for="brush-size">Brush Size:</label>
+      <input type="range" id="brush-size" min="1" max="250" value="10" />
+      <label for="blur-amount">Blur Amount:</label>
+      <input type="range" id="blur-amount" min="0" max="50" value="0" />
+
+      <label for="canvas-size">Canvas Size:</label>
+      <input type="number" id="canvas-size" value="500" min="1" />
+      <button id="set-canvas-size">Set</button>
+      <button id="undo">Undo</button>
+      <button id="clear-canvas">Clear</button>
+      <label for="draw-function">Draw Function:</label>
+      <select id="draw-function">
+        <option value="draw1">BLEND</option>
+        <option value="draw2">Erase</option>
+        <option value="draw3">COLORFUL!</option>
+        <option value="draw5">FUN SPIRAL</option>
+        <option value="draw6">Lazer</option>
+        <option value="draw7">Rainbow Lazer</option>
+        <option value="draw8">RBW Glow</option>
+        <option value="draw9">Connect the Dots</option>
+        <option value="draw11">Blobby McChunk</option>
+        <!--<option value="draw10">GL Draw</option>-->
+      </select>
+      <button id="twirl-button">Twirl</button>
+      <button id="crazy-button" onclick="displacePixels()">Displace</button>
+      <label for="fx-function">more FX:</label>
+      <select id="fx-function">
+        <option value="fx1">WAVE</option>
+        <option value="fx6">Smooth + Zoom</option>
+        <option value="fx2">SQR SEP</option>
+        <option value="fx3">Sphereize</option>
+        <option value="fx4">Glass Sphereize</option>
+        <option value="fx5">w' a Twist</option>
+        <option value="fx7">Pixelate</option>
+        <option value="fx8">Glow</option>
+        <!--<option value="fx8">Splatter</option>-->
+      </select>
+      <button id="applyFxButton">Apply FX</button>
+      <label for="saturation">Saturation:</label>
+      <input type="range" id="saturation" min="-100" max="100" value="0" step="1" />
+      <label for="hue-shift">Hue Shift:</label>
+      <input type="range" id="hue-shift" min="0" max="360" value="0" step="1" />
+
+      <input type="color" class="color1" name="color1" value="#FFAAAA">
+    <input type="color" class="color2" name="color2" value="#734C8F">
+    <input type="color" class="color3" name="color3" value="#fff">
+
+     <select name="toDirection" id="angle">
+      <option value="to right">to right</option>
+      <option value="to left bottom">to left bottom</option>
+      <option value="to left top">to left top</option>
+      <option value="to bottom">to bottom</option>
+      <option value="to top">to top</option>
+      <option value="to right bottom">to right bottom</option>
+      <option value="to right top">to right top</option>
+      <option value="to left">to left</option>
+    </select>
+    <button id="save-jpg">Save JPG</button>
+  </div>
+      
+      
+
+
+    </div>
+    </div>
+    </div>
+   <script>
+ const canvas = document.querySelector("#canvas");
+const context = canvas.getContext("2d");
+const glcanvas = document.querySelector("#glcanvas");
+const gl = glcanvas.getContext('webgl');
+const colorPicker = document.querySelector("#color-picker");
+const brushSize = document.querySelector("#brush-size");
+const canvasSize = document.querySelector("#canvas-size");
+const setCnavasSize = document.querySelector("#set-canvas-size");
+const saveJPG = document.querySelector("#save-jpg");
+const canvasContainer = document.querySelector("#canvas-container");
+const drawFunction = document.querySelector("#draw-function");
+const clearCanvasBtn = document.querySelector("#clear-canvas");
+const twirlButton = document.querySelector("#twirl-button");
+const fxFunction = document.querySelector("#fx-function");
+const applyFxButton = document.getElementById("applyFxButton");
+const devicePixelRatio = window.devicePixelRatio || 3;
+const color1Input = document.querySelector(".color1");
+const color2Input = document.querySelector(".color2");
+const color3Input = document.querySelector(".color3");
+const angleSelect = document.getElementById("angle");
+const lastStates = [];
+const savedDrawingStates = [];
+const savedEffectStates = [];
+const saturationSlider = document.querySelector("#saturation");
+const hueShiftSlider = document.querySelector("#hue-shift");
+
+saturationSlider.addEventListener("input", applyColorAdjustment);
+hueShiftSlider.addEventListener("input", applyColorAdjustment);
+
+
+const tempCanvas = document.createElement("canvas");
+const tempContext = tempCanvas.getContext("2d");
+
+
+
+
+
+const canvasWidth = canvasContainer.clientWidth * devicePixelRatio;
+const canvasHeight = canvasContainer.clientHeight * devicePixelRatio;
+
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
+context.scale(devicePixelRatio, devicePixelRatio);
+canvas.setAttribute('width', canvasWidth);
+canvas.setAttribute('height', canvasHeight);
+
+glcanvas.width = canvasWidth;
+glcanvas.height = canvasHeight;
+glcanvas.setAttribute('width', canvasWidth);
+glcanvas.setAttribute('height', canvasHeight);
+
+applyFxButton.addEventListener("click", makeFX);
+
+function createGradientFromInput() {
+      const color1 = color1Input.value;
+      const color2 = color2Input.value;
+      const color3 = color3Input.value;
+      const angle = angleSelect.value;
+      createGradient(canvas, color1, color2, color3, angle);
+    }
+
+    color1Input.addEventListener("input", createGradientFromInput);
+    color2Input.addEventListener("input", createGradientFromInput);
+    color3Input.addEventListener("input", createGradientFromInput);
+    angleSelect.addEventListener("change", createGradientFromInput);
+
+    createGradient(canvas, color1Input.value, color2Input.value, color3Input.value, angleSelect.value);
+
+function twistImage() {
+  const twistAmount = 50;
+  const offscreenCanvas = document.createElement("canvas");
+  const offscreenContext = offscreenCanvas.getContext("2d");
+  
+  // Set the offscreen canvas dimensions to a multiple of the original canvas dimensions
+  offscreenCanvas.width = canvas.width * 2;
+  offscreenCanvas.height = canvas.height * 2;
+  
+  // Draw the original image onto the offscreen canvas at a higher resolution
+  offscreenContext.drawImage(canvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+  // Apply the twist effect to the offscreen canvas
+  const cx = offscreenCanvas.width / 2;
+  const cy = offscreenCanvas.height / 2;
+  const imageData = offscreenContext.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+  const pixels = imageData.data;
+  const twistedPixels = new Uint8ClampedArray(pixels.length);
+
+  for (let x = 0; x < offscreenCanvas.width; x++) {
+    for (let y = 0; y < offscreenCanvas.height; y++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+      const twist = twistAmount / distance;
+      const tx = cx + distance * Math.cos(angle + twist * Math.PI);
+      const ty = cy + distance * Math.sin(angle + twist * Math.PI);
+
+      if (tx >= 0 && tx < offscreenCanvas.width && ty >= 0 && ty < offscreenCanvas.height) {
+        const sourcePixelIndex = (y * offscreenCanvas.width + x) * 4;
+        const destPixelIndex = (Math.floor(ty) * offscreenCanvas.width + Math.floor(tx)) * 4;
+
+        twistedPixels[destPixelIndex] = pixels[sourcePixelIndex];
+        twistedPixels[destPixelIndex + 1] = pixels[sourcePixelIndex + 1];
+        twistedPixels[destPixelIndex + 2] = pixels[sourcePixelIndex + 2];
+        twistedPixels[destPixelIndex + 3] = pixels[sourcePixelIndex + 3];
+      }
+    }
+  }
+
+  imageData.data.set(twistedPixels);
+  offscreenContext.putImageData(imageData, 0, 0);
+
+  // Draw the transformed image from the offscreen canvas onto the original canvas
+  context.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
+}
+
+function applyColorAdjustment() {
+  const saturation = parseInt(saturationSlider.value, 10) / 100;
+  const hueShift = parseInt(hueShiftSlider.value, 10) * (Math.PI / 180);
+
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+
+    const hsl = rgbToHsl(r, g, b);
+    hsl[0] = (hsl[0] + hueShift) % 1;
+    hsl[1] = Math.min(Math.max(hsl[1] * (1 + saturation), 0), 1);
+
+    const rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+    pixels[i] = rgb[0];
+    pixels[i + 1] = rgb[1];
+    pixels[i + 2] = rgb[2];
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255, g /= 255, b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+
+    h /= 6;
+  }
+
+  return [h, s, l];
+}
+
+function hslToRgb(h, s, l) {
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+
+function saveState() {
+  if (lastStates.length === 3) {
+    lastStates.shift();
+  }
+  lastStates.push(canvas.toDataURL());
+}
+
+function undo() {
+  if (lastStates.length === 0) return;
+  const lastState = lastStates.pop();
+  const img = new Image();
+  img.src = lastState;
+  img.onload = () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+}
+
+
+
+function drawCrazy() {
+  const width = canvas.width;
+  const height = canvas.height;
+  const imageData = context.createImageData(width, height);
+  const pixels = imageData.data;
+
+  const scale = 0.05;
+  const octaves = 6;
+  const persistence = 0.5;
+  const lacunarity = 2.0;
+
+  // Generate Simplex noise
+  const simplex = new SimplexNoise(Math.random);
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      let noiseValue = 0;
+      let amplitude = 1;
+      let frequency = 1;
+      for (let i = 0; i < octaves; i++) {
+        const nx = x * scale * frequency;
+        const ny = y * scale * frequency;
+        const noiseSample = simplex.noise2D(nx, ny);
+        noiseValue += noiseSample * amplitude;
+        amplitude *= persistence;
+        frequency *= lacunarity;
+      }
+      const pixelIndex = (y * width + x) * 4;
+      const r = Math.abs(Math.floor(noiseValue * 255));
+      const g = Math.abs(Math.floor(noiseValue * 255));
+      const b = Math.abs(Math.floor(noiseValue * 255));
+      pixels[pixelIndex] = r;
+      pixels[pixelIndex + 1] = g;
+      pixels[pixelIndex + 2] = b;
+      pixels[pixelIndex + 3] = 255;
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+
+
+
+
+
+
+
+
+
+  let isDrawing = false;
+  let lastX = 0;
+  let lastY = 0;
+  let hue = 0;
+
+  canvas.addEventListener("mousedown", startDrawing);
+canvas.addEventListener("touchstart", startDrawing);
+canvas.addEventListener("mousemove", drawWrapper);
+canvas.addEventListener("touchmove", drawWrapper);
+canvas.addEventListener("mouseup", stopDrawing);
+canvas.addEventListener("touchend", stopDrawing);
+canvas.addEventListener("mouseout", stopDrawing);
+canvas.addEventListener("mouseenter", handleMouseEnter); // Add this line
+
+
+canvas.addEventListener('dragover', (e) => {
+  e.preventDefault();
+});
+
+canvas.addEventListener('drop', (e) => {
+  e.preventDefault();
+  isDrawing = false;
+  saveState();
+  stopDrawing();
+  const file = e.dataTransfer.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const widthRatio = canvas.width / img.width;
+      const heightRatio = canvas.height / img.height;
+      const ratio = Math.max(widthRatio, heightRatio);
+      const newWidth = img.width * ratio;
+      const newHeight = img.height * ratio;
+      const offsetX = (canvas.width - newWidth) / 2;
+      const offsetY = (canvas.height - newHeight) / 2;
+      // Draw the dropped image onto the canvas without stretching
+      context.drawImage(img, 0, 0, img.width, img.height, offsetX, offsetY, newWidth, newHeight);
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+
+
+function handleMouseEnter(e) {
+  if (e.buttons === 1) {
+    isDrawing = true;
+    [lastX, lastY] = [e.touches ? e.touches[0].pageX - canvasContainer.offsetLeft : e.offsetX, e.touches ? e.touches[0].pageY - canvasContainer.offsetTop : e.offsetY];
+  }
+}
+
+
+  function startDrawing(e) {
+  e.preventDefault();
+  isDrawing = true;
+  saveState();
+  updateMouseCoordinates(e); // Call updateMouseCoordinates here
+  [lastX, lastY] = [mouseX, mouseY]; // Set lastX and lastY using updated mouseX and mouseY
+
+  if (drawFunction.value === "draw4") {
+    draw4(e, isDrawing);
+  }
+}
+
+
+  function drawWrapper(e) {
+  e.preventDefault();
+  updateMouseCoordinates(e);
+
+  if (!isDrawing) {
+    if (e.type === "mousedown" || e.type === "touchstart") {
+      saveState(); // Save the state only when starting a new stroke
+    }
+    return;
+  }
+
+  const drawFunc = drawFunction.value;
+  if (drawFunc === "draw1") {
+    draw1(e);
+  } else if (drawFunc === "draw2") {
+    draw2(e);
+  } else if (drawFunc === "draw3") {
+    draw3(e);
+  } else if (drawFunc === "draw4") {
+    draw4(e, true);
+  } else if (drawFunc === "draw5") {
+    draw5(e);
+  } else if (drawFunc === "draw6") {
+    draw6(e);
+  } else if (drawFunc === "draw7") {
+    draw7(e);
+  } else if (drawFunc === "draw8") {
+    draw8(e);
+  } else if (drawFunc === "draw9") {
+    draw9(e);
+  } else if (drawFunc === "draw10") {
+    draw10(contextGL);
+  } else if (drawFunc === "draw11") {
+    draw11(e);
+  }
+
+  // Update lastX and lastY values after the drawing function call
+  [lastX, lastY] = [mouseX, mouseY];
+}
+
+
+function makeFX(e) {
+  e.preventDefault();
+  saveState();
+
+  const fxFunc = fxFunction.value;
+  console.log("Selected effect:", fxFunc);
+
+  if (fxFunc === "fx1") {
+    console.log("Calling fx1(e)");
+    fx1(e);
+  } else if (fxFunc === "fx2") {
+    console.log("Calling fx2(e)");
+    fx2(e);
+  } else if (fxFunc === "fx3") {
+    console.log("Calling fx3(e)");
+    fx3(e);
+  } else if (fxFunc === "fx4") {
+    console.log("Calling fx4(e)");
+    fx4(e);
+  } else if (fxFunc === "fx5") {
+    console.log("Calling fx5(e)");
+    fx5(e);
+  } else if (fxFunc === "fx6") {
+    console.log("Calling fx6(e)");
+    fx6(e);
+  } else if (fxFunc === "fx7") {
+    console.log("Calling fx7(e)");
+    fx7(e);
+  } else if (fxFunc === "fx8") {
+    console.log("Calling fx8(e)");
+    fx8(e);
+  } else if (fxFunc === "fx9") {
+    console.log("Calling fx9(e)");
+    fx9(e);
+  }
+}
+
+
+// Update event listeners
+canvas.addEventListener("mousemove", drawWrapper);
+canvas.addEventListener("touchmove", function (e) {
+  e.preventDefault();
+  let touch = e.touches[0];
+  let offsetX = touch.pageX - canvas.getBoundingClientRect().left;
+  let offsetY = touch.pageY - canvas.getBoundingClientRect().top;
+  drawWrapper({ ...e, offsetX, offsetY });
+});
+
+
+function fx1(e) {
+  const amplitude = 20;
+  const frequency = 0.05;
+
+  context.drawImage(canvas, 0, 0);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  const warpedPixels = new Uint8ClampedArray(pixels.length);
+
+  for (let x = 0; x < canvas.width; x++) {
+    for (let y = 0; y < canvas.height; y++) {
+      const offset = Math.round(Math.sin(x * frequency) * amplitude);
+      const sourcePixelIndex = (y * canvas.width + x) * 4;
+      const destPixelIndex = ((y + offset) * canvas.width + x) * 4;
+
+      if (destPixelIndex >= 0 && destPixelIndex < warpedPixels.length) {
+        warpedPixels[destPixelIndex] = pixels[sourcePixelIndex];
+        warpedPixels[destPixelIndex + 1] = pixels[sourcePixelIndex + 1];
+        warpedPixels[destPixelIndex + 2] = pixels[sourcePixelIndex + 2];
+        warpedPixels[destPixelIndex + 3] = pixels[sourcePixelIndex + 3];
+      }
+    }
+  }
+
+  imageData.data.set(warpedPixels);
+  context.putImageData(imageData, 0, 0);
+}
+
+function fx2(e) {
+  const amplitude = 20;
+  const frequency = 0.05;
+
+  context.drawImage(canvas, 0, 0);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  const warpedPixels = new Uint8ClampedArray(pixels.length);
+
+  for (let x = 0; x < canvas.width; x++) {
+    for (let y = 0; y < canvas.height; y++) {
+      const phase = x * frequency;
+      const squareWave = Math.sign(Math.sin(2 * Math.PI * phase));
+      const offset = Math.round(squareWave * amplitude);
+      const sourcePixelIndex = (y * canvas.width + x) * 4;
+      const destPixelIndex = ((y + offset) * canvas.width + x) * 4;
+
+      if (destPixelIndex >= 0 && destPixelIndex < warpedPixels.length) {
+        warpedPixels[destPixelIndex] = pixels[sourcePixelIndex];
+        warpedPixels[destPixelIndex + 1] = pixels[sourcePixelIndex + 1];
+        warpedPixels[destPixelIndex + 2] = pixels[sourcePixelIndex + 2];
+        warpedPixels[destPixelIndex + 3] = pixels[sourcePixelIndex + 3];
+      }
+    }
+  }
+
+  imageData.data.set(warpedPixels);
+  context.putImageData(imageData, 0, 0);
+}
+
+function fx3() {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const maxRadius = Math.min(cx, cy);
+  const strength = 0.8;
+
+  context.drawImage(canvas, 0, 0);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+
+  for (let x = 0; x < canvas.width; x++) {
+    for (let y = 0; y < canvas.height; y++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const radius = Math.min(distance, maxRadius);
+      const angle = Math.atan2(dy, dx);
+      const sphereizedRadius = Math.sin(Math.PI * radius / maxRadius);
+      const sphereizedDistance = sphereizedRadius * maxRadius / Math.PI;
+      const sx = cx + sphereizedDistance * Math.cos(angle);
+      const sy = cy + sphereizedDistance * Math.sin(angle);
+      const sourcePixelIndex = (y * canvas.width + x) * 4;
+      const destPixelIndex = (Math.floor(sy) * canvas.width + Math.floor(sx)) * 4;
+      if (destPixelIndex >= 0 && destPixelIndex < pixels.length) {
+        for (let i = 0; i < 4; i++) {
+          pixels[sourcePixelIndex + i] = strength * pixels[sourcePixelIndex + i] + (1 - strength) * pixels[destPixelIndex + i];
+        }
+      }
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function fx4() {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const radius = Math.min(cx, cy) * 0.8;
+
+  context.drawImage(canvas, 0, 0);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  const warpedPixels = new Uint8ClampedArray(pixels.length);
+
+  for (let x = 0; x < canvas.width; x++) {
+    for (let y = 0; y < canvas.height; y++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < radius) {
+        const scale = 1 - distance / radius;
+        const theta = Math.atan2(dy, dx);
+        const sx = cx + scale * radius * Math.cos(theta);
+        const sy = cy + scale * radius * Math.sin(theta);
+        const sourcePixelIndex = (Math.floor(sy) * canvas.width + Math.floor(sx)) * 4;
+        const destPixelIndex = (y * canvas.width + x) * 4;
+
+        if (sourcePixelIndex >= 0 && sourcePixelIndex < pixels.length) {
+          warpedPixels[destPixelIndex] = pixels[sourcePixelIndex];
+          warpedPixels[destPixelIndex + 1] = pixels[sourcePixelIndex + 1];
+          warpedPixels[destPixelIndex + 2] = pixels[sourcePixelIndex + 2];
+          warpedPixels[destPixelIndex + 3] = pixels[sourcePixelIndex + 3];
+        }
+      }
+    }
+  }
+
+  imageData.data.set(warpedPixels);
+  context.putImageData(imageData, 0, 0);
+}
+
+function fx5() {
+  const offscreenCanvas = document.createElement("canvas");
+  const offscreenContext = offscreenCanvas.getContext("2d");
+
+  // Set the offscreen canvas dimensions to a multiple of the original canvas dimensions
+  offscreenCanvas.width = canvas.width * 2;
+  offscreenCanvas.height = canvas.height * 2;
+
+  // Draw the original image onto the offscreen canvas at a higher resolution
+  offscreenContext.drawImage(canvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+  // Apply the warp effect to the offscreen canvas
+  const imageData = offscreenContext.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+  const pixels = imageData.data;
+  const warpedPixels = new Uint8ClampedArray(pixels.length);
+
+  const cx = offscreenCanvas.width / 2;
+  const cy = offscreenCanvas.height / 2;
+
+  for (let x = 0; x < offscreenCanvas.width; x++) {
+    for (let y = 0; y < offscreenCanvas.height; y++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+      const radius = Math.min(offscreenCanvas.width, offscreenCanvas.height) / 2;
+      const warpedDistance = Math.sqrt(distance * radius) / radius;
+      const warpAmount = warpedDistance * 0.5;
+
+      const tx = cx + distance * Math.cos(angle + warpAmount * Math.PI);
+      const ty = cy + distance * Math.sin(angle + warpAmount * Math.PI);
+
+      if (tx >= 0 && tx < offscreenCanvas.width && ty >= 0 && ty < offscreenCanvas.height) {
+        const sourcePixelIndex = (y * offscreenCanvas.width + x) * 4;
+        const destPixelIndex = (Math.floor(ty) * offscreenCanvas.width + Math.floor(tx)) * 4;
+
+        warpedPixels[destPixelIndex] = pixels[sourcePixelIndex];
+        warpedPixels[destPixelIndex + 1] = pixels[sourcePixelIndex + 1];
+        warpedPixels[destPixelIndex + 2] = pixels[sourcePixelIndex + 2];
+        warpedPixels[destPixelIndex + 3] = pixels[sourcePixelIndex + 3];
+      }
+    }
+  }
+
+  imageData.data.set(warpedPixels);
+  offscreenContext.putImageData(imageData, 0, 0);
+
+  // Draw the transformed image from the offscreen canvas onto the original canvas
+  context.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
+}
+
+function fx6() {
+  const zoomFactor = 2;
+  const smoothFactor = 4;
+
+  // Create an offscreen canvas to draw the higher quality version of the image
+  const offscreenCanvas = document.createElement("canvas");
+  offscreenCanvas.width = canvas.width * smoothFactor;
+  offscreenCanvas.height = canvas.height * smoothFactor;
+  const offscreenContext = offscreenCanvas.getContext("2d");
+
+  // Draw the image onto the offscreen canvas using image smoothing
+  offscreenContext.imageSmoothingEnabled = true;
+  offscreenContext.imageSmoothingQuality = "high";
+  offscreenContext.drawImage(canvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+  // Draw the transformed image onto the original canvas with a zoom effect
+  context.save();
+  context.translate(canvas.width / 2, canvas.height / 2);
+  context.scale(zoomFactor, zoomFactor);
+  context.drawImage(offscreenCanvas, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+  context.restore();
+}
+
+function fx7() {
+  const pixelSize = 100;
+  
+  // Create an offscreen canvas to draw the pixelated version of the image
+  const offscreenCanvas = document.createElement("canvas");
+  offscreenCanvas.width = canvas.width;
+  offscreenCanvas.height = canvas.height;
+  const offscreenContext = offscreenCanvas.getContext("2d");
+
+  // Draw the pixelated image onto the offscreen canvas
+  offscreenContext.drawImage(canvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+  const imageData = offscreenContext.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+  const pixels = imageData.data;
+  for (let x = 0; x < offscreenCanvas.width; x += pixelSize) {
+    for (let y = 0; y < offscreenCanvas.height; y += pixelSize) {
+      const index = (y * offscreenCanvas.width + x) * 4;
+      const r = pixels[index];
+      const g = pixels[index + 1];
+      const b = pixels[index + 2];
+      const a = pixels[index + 3];
+      for (let i = 0; i < pixelSize && x + i < offscreenCanvas.width; i++) {
+        for (let j = 0; j < pixelSize && y + j < offscreenCanvas.height; j++) {
+          const newIndex = ((y + j) * offscreenCanvas.width + (x + i)) * 4;
+          pixels[newIndex] = r;
+          pixels[newIndex + 1] = g;
+          pixels[newIndex + 2] = b;
+          pixels[newIndex + 3] = a;
+        }
+      }
+    }
+  }
+  offscreenContext.putImageData(imageData, 0, 0);
+
+  // Draw the transformed image from the offscreen canvas onto the original canvas
+  context.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
+}
+
+
+function fx8() {
+  const lineWidth = 20;
+  const blurAmount = 30;
+  const glowColor = "#fff";
+
+  // Create an offscreen canvas to draw the stroke and blurred image
+  const offscreenCanvas = document.createElement("canvas");
+  offscreenCanvas.width = canvas.width;
+  offscreenCanvas.height = canvas.height;
+  const offscreenContext = offscreenCanvas.getContext("2d");
+
+  // Draw a stroke around the image with the glow color
+  offscreenContext.lineWidth = lineWidth;
+  offscreenContext.strokeStyle = glowColor;
+  offscreenContext.strokeRect(lineWidth / 2, lineWidth / 2, offscreenCanvas.width - lineWidth, offscreenCanvas.height - lineWidth);
+
+  // Blur the stroke
+  offscreenContext.filter = `blur(${blurAmount}px)`;
+
+  // Draw the original image onto the offscreen canvas
+  offscreenContext.drawImage(canvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+  // Draw the transformed image from the offscreen canvas onto the original canvas with the "lighter" globalCompositeOperation
+  context.globalCompositeOperation = "lighter";
+  context.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
+
+  // Reset the shadow properties
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function stampTool(e) {
+  e.preventDefault();
+  if (drawFunction.value !== "draw4") return;
+
+  const scaleFactor = brushSize.value / 100;
+  const width = stampImage.width * scaleFactor;
+  const height = stampImage.height * scaleFactor;
+
+  const offsetX = e.offsetX || (e.touches ? e.touches[0].pageX - canvasContainer.offsetLeft : e.clientX);
+  const offsetY = e.offsetY || (e.touches ? e.touches[0].pageY - canvasContainer.offsetTop : e.clientY);
+
+  const x = offsetX - width / 2;
+  const y = offsetY - height / 2;
+
+  const blurAmount = document.querySelector("#blur-amount").value;
+
+  // Save the current context properties
+  context.save();
+
+  context.globalCompositeOperation = "source-over";
+  context.filter = 'none';
+  context.drawImage(stampImage, x, y, width, height);
+  context.filter = `blur(${blurAmount}px)`; // Add this line
+  context.filter = 'none'; // Add this line
+
+  // Restore the context properties
+  context.restore();
+}
+
+  function draw1(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+
+  const prevPixel = context.getImageData(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY, 1, 1).data;
+  const isPrevTransparent = prevPixel[3] === 0;
+
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(lastX, lastY);
+  context.lineTo(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY);
+
+  const blurAmount = document.querySelector("#blur-amount").value;
+
+  if (!isPrevTransparent) {
+    context.globalCompositeOperation = "soft-light";
+    context.strokeStyle = colorPicker.value;
+    context.filter = `blur(${blurAmount}px)`; // Set the filter property here
+    context.stroke();
+  } else {
+    context.globalCompositeOperation = "source-over";
+    context.strokeStyle = colorPicker.value;
+    context.filter = `blur(${blurAmount}px)`; // Set the filter property here
+    context.stroke();
+  }
+
+  context.filter = 'none';
+  [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+}
+
+
+
+
+  function draw2(e) {
+    context.lineWidth = brushSize.value;
+    context.lineCap = "round";
+    context.globalCompositeOperation = "destination-out";
+    context.strokeStyle = "rgba(0,0,0,1)";
+
+    context.beginPath();
+    context.moveTo(lastX, lastY);
+    context.lineTo(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY);
+    context.stroke();
+
+    [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+  }
+
+  function draw3(e) {
+  const blurAmount = document.querySelector("#blur-amount").value;
+
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.globalCompositeOperation = "source-over";
+  context.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+  context.filter = `blur(${blurAmount}px)`; 
+
+  context.beginPath();
+  context.moveTo(lastX, lastY);
+  context.lineTo(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY);
+  context.stroke();
+
+  context.filter = 'none';
+
+  [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+
+  hue += 1;
+  if (hue >= 360) {
+    hue = 0;
+  }
+}
+
+
+function draw4(e, drawStamp = false) {
+  const scaleFactor = brushSize.value / 100;
+  const width = stampImage.width * scaleFactor;
+  const height = stampImage.height * scaleFactor;
+
+  const offsetX = e.offsetX || (e.touches ? e.touches[0].pageX - canvasContainer.offsetLeft : e.clientX);
+  const offsetY = e.offsetY || (e.touches ? e.touches[0].pageY - canvasContainer.offsetTop : e.clientY);
+
+  const x = offsetX - width / 2;
+  const y = offsetY - height / 2;
+
+  const blurAmount = document.querySelector("#blur-amount").value;
+
+  if (drawStamp) {
+    // Save the current context properties
+    context.save();
+
+    context.globalCompositeOperation = "source-over";
+    context.filter = 'none';
+    context.drawImage(stampImage, x, y, width, height);
+    context.filter = `blur(${blurAmount}px)`; // Add this line
+    context.filter = 'none'; // Add this line
+
+    // Restore the context properties
+    context.restore();
+  }
+}
+
+function draw5(e) {
+  const blurAmount = document.querySelector("#blur-amount").value;
+  const colorPicker = document.querySelector("#color-picker");
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+
+  // calculate the center of the canvas
+  const centerX = canvasWidth / 2;
+  const centerY = canvasHeight / 2;
+
+  // calculate the distance between the center and the mouse position
+  const dx = e.offsetX - centerX;
+  const dy = e.offsetY - centerY;
+  const distance = Math.sqrt(dx*dx + dy*dy);
+
+  // calculate the angle between the center and the mouse position
+  const angle = Math.atan2(dy, dx);
+
+  // calculate the number of turns the spiral should make based on the distance
+  const turns = distance / 20;
+
+  // set the context properties
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.filter = `blur(${blurAmount}px)`;
+
+  // draw the spiral
+  for (let i = 0; i < 360 * turns; i += 10) {
+    const spiralX = centerX + (distance / 360 * i) * Math.cos(angle + (i / 50));
+    const spiralY = centerY + (distance / 360 * i) * Math.sin(angle + (i / 50));
+    const hue = (i / 360) * 360;
+
+    context.beginPath();
+    context.moveTo(spiralX, spiralY);
+    context.lineTo(spiralX + 5, spiralY + 5);
+    context.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+    context.stroke();
+  }
+}
+
+
+function draw6(e) {
+  const blurAmount = document.querySelector("#blur-amount").value;
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+
+  // calculate the distance from the center of the canvas
+  const dx = e.offsetX - canvasWidth / 2;
+  const dy = e.offsetY - canvasHeight / 2;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // calculate the angle between the center and the mouse position
+  const angle = Math.atan2(dy, dx);
+
+  // set the context properties
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.filter = `blur(${blurAmount}px)`;
+  context.globalCompositeOperation = "overlay";
+
+  // create a gradient based on the distance from the center of the brush
+  const gradientSize = 50; // controls the size of the gradient
+  const gradient = context.createRadialGradient(e.offsetX, e.offsetY, brushSize.value, e.offsetX, e.offsetY, brushSize.value + gradientSize);
+  gradient.addColorStop(0, "transparent");
+  gradient.addColorStop(1, `hsl(${Math.floor(distance / 5) % 360}, 100%, 50%)`);
+
+  // draw the brush stroke
+  context.strokeStyle = gradient;
+  context.beginPath();
+  context.moveTo(lastX, lastY);
+  context.lineTo(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY);
+  context.stroke();
+
+  // loop through a grid of pixels around the current point
+  const density = 50; // controls the density of the brush stroke
+  const size = brushSize.value;
+  for (let i = -size; i < size; i++) {
+    for (let j = -size; j < size; j++) {
+      // calculate the distance from the current point to the current pixel
+      const distanceFromCenter = Math.sqrt(i * i + j * j);
+
+      // only draw on pixels within the brush size
+      if (distanceFromCenter <= size) {
+        // calculate the coordinates of the current pixel
+        const px = e.offsetX + i;
+        const py = e.offsetY + j;
+
+        // get the current pixel's color
+        const currentColor = context.getImageData(px, py, 1, 1).data;
+
+        // blend the new color with the current color using the overlay blend mode
+        const blendR = (currentColor[0] * (255 - density) + density * gradient.colorStops[1].color[0]) / 255;
+        const blendG = (currentColor[1] * (255 - density) + density * gradient.colorStops[1].color[1]) / 255;
+        const blendB = (currentColor[2] * (255 - density) + density * gradient.colorStops[1].color[2]) / 255;
+        context.fillStyle = `rgba(${blendR}, ${blendG}, ${blendB}, 1)`;
+        context.fillRect(px, py, 1, 1);
+      }
+    }
+  }
+
+  // reset the filter and update the last position
+  context.filter = 'none';
+  [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+}
+
+
+function draw7(e) {
+  const blurAmount = document.querySelector("#blur-amount").value;
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+
+  // calculate the distance from the center of the canvas
+  const dx = e.offsetX - canvasWidth / 2;
+  const dy = e.offsetY - canvasHeight / 2;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // calculate the angle between the center and the mouse position
+  const angle = Math.atan2(dy, dx);
+
+  // set the context properties
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.filter = `blur(${blurAmount}px)`;
+  context.globalCompositeOperation = "overlay";
+
+  // create a gradient based on the angle and distance from the center of the brush
+  const gradient = context.createLinearGradient(
+    canvasWidth / 2,
+    canvasHeight / 2,
+    canvasWidth / 2 + distance * Math.cos(angle),
+    canvasHeight / 2 + distance * Math.sin(angle)
+  );
+  gradient.addColorStop(0, "red");
+  gradient.addColorStop(0.17, "orange");
+  gradient.addColorStop(0.34, "yellow");
+  gradient.addColorStop(0.51, "green");
+  gradient.addColorStop(0.68, "blue");
+  gradient.addColorStop(0.85, "indigo");
+  gradient.addColorStop(1, "violet");
+
+  // draw the brush stroke
+  context.strokeStyle = gradient;
+  context.beginPath();
+  context.moveTo(lastX, lastY);
+  context.lineTo(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY);
+  context.stroke();
+
+  // loop through a grid of pixels around the current point
+  const density = 50; // controls the density of the brush stroke
+  const size = brushSize.value;
+  for (let i = -size; i < size; i++) {
+    for (let j = -size; j < size; j++) {
+      // calculate the distance from the current point to the current pixel
+      const distanceFromCenter = Math.sqrt(i * i + j * j);
+
+      // only draw on pixels within the brush size
+      if (distanceFromCenter <= size) {
+        // calculate the coordinates of the current pixel
+        const px = e.offsetX + i;
+        const py = e.offsetY + j;
+
+        // get the current pixel's color
+        const currentColor = context.getImageData(px, py, 1, 1).data;
+
+        // blend the new color with the current color using the overlay blend mode
+        const blendR = (currentColor[0] * (255 - density) + density * parseInt(gradient.colorStops[6].color.slice(1, 3), 16)) / 255;
+        const blendG = (currentColor[1] * (255 - density) + density * parseInt(gradient.colorStops[6].color.slice(3, 5), 16)) / 255;
+        const blendB = (currentColor[2] * (255 - density) + density * parseInt(gradient.colorStops[6].color.slice(5, 7), 16)) / 255;
+        context.fillStyle = `rgba(${blendR}, ${blendG}, ${blendB}, 1)`;
+        context.fillRect(px, py, 1, 1);
+      }
+    }
+  }
+
+  // reset the filter and update the last position
+  context.filter = 'none';
+  [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+}
+
+
+function draw8(e) {
+  const blurAmount = document.querySelector("#blur-amount").value;
+  const layers = 8;
+  const pulseSpeed = 0.05;
+  const pulseSize = 3;
+
+  context.lineCap = "round";
+  context.globalCompositeOperation = "source-over";
+
+  const time = performance.now() * pulseSpeed;
+
+  for (let i = 0; i < layers; i++) {
+    const pulseFactor = Math.sin(time + i) * pulseSize;
+    context.lineWidth = brushSize.value + i * 2 + pulseFactor;
+    context.strokeStyle = `hsla(${hue}, 100%, 50%, ${(1 - i / layers) * 0.2})`;
+    context.filter = `blur(${blurAmount + i * 3 + pulseFactor}px)`;
+
+    context.beginPath();
+    context.moveTo(lastX, lastY);
+    context.lineTo(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY);
+    context.stroke();
+  }
+
+  context.filter = 'none';
+
+  [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+
+  hue += 1;
+  if (hue >= 360) {
+    hue = 0;
+  }
+}
+
+let lastDot = null;
+
+function draw9(e) {
+  e.preventDefault();
+  const blurAmount = document.querySelector("#blur-amount").value;
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+
+  // calculate the distance from the center of the canvas
+  const dx = e.offsetX - canvasWidth / 2;
+  const dy = e.offsetY - canvasHeight / 2;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // calculate the angle between the center and the mouse position
+  const angle = Math.atan2(dy, dx);
+
+  // set the context properties
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.filter = `blur(${blurAmount}px)`;
+  context.globalCompositeOperation = "overlay";
+
+  if (!lastDot) {
+    // Draw a dot on the first click
+    context.beginPath();
+    context.arc(e.offsetX, e.offsetY, brushSize.value / 2, 0, Math.PI * 2);
+    context.fillStyle = colorPicker.value;
+    context.fill();
+    lastDot = { x: e.offsetX, y: e.offsetY };
+  } else {
+    // Draw a line on the second click
+    context.beginPath();
+    context.moveTo(lastDot.x, lastDot.y);
+    context.lineTo(e.offsetX, e.offsetY);
+    context.strokeStyle = colorPicker.value;
+    context.stroke();
+    lastDot = { x: e.offsetX, y: e.offsetY };
+  }
+
+  // reset the filter and update the last position
+  context.filter = 'none';
+}
+
+function stopDrawing() {
+  lastDot = null;
+}
+
+
+function draw10(x, y, dx, dy) {
+  if (!gl) {
+    console.error('WebGL not supported');
+    return;
+  }
+
+  const brushRadius = brushSize.value / 2;
+
+  const vertexShaderSource = `
+    attribute vec2 a_position;
+    uniform vec2 u_resolution;
+    void main() {
+      vec2 zeroToOne = a_position / u_resolution;
+      vec2 zeroToTwo = zeroToOne * 2.0;
+      vec2 clipSpace = zeroToTwo - 1.0;
+      gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+    }
+  `;
+
+  const fragmentShaderSource = `
+    precision mediump float;
+    uniform vec4 u_color;
+    void main() {
+      gl_FragColor = u_color;
+    }
+  `;
+
+  const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertexShader, vertexShaderSource);
+  gl.compileShader(vertexShader);
+  const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fragmentShader, fragmentShaderSource);
+  gl.compileShader(fragmentShader);
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  gl.useProgram(program);
+
+  const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.enableVertexAttribArray(positionAttributeLocation);
+  gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+  const colorLocation = gl.getUniformLocation(program, 'u_color');
+  const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+
+  const color = hexToRGBA(colorPicker.value);
+  gl.uniform4f(colorLocation, color[0], color[1], color[2], color[3]);
+  gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
+
+  const points = [];
+  const count = 100;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const xPos = x + brushRadius * Math.cos(angle);
+    const yPos = y + brushRadius * Math.sin(angle);
+    points.push(xPos, yPos);
+  }
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+  gl.drawArrays(gl.TRIANGLE_FAN, 0, points.length / 2);
+  gl.drawArrays(gl.TRIANGLE_FAN, 0, points.length / 2);
+updateGLCanvas();
+
+}
+
+function draw11(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+
+  const prevPixel = context.getImageData(e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY, 1, 1).data;
+  const isPrevTransparent = prevPixel[3] === 0;
+
+  context.lineWidth = brushSize.value;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  const points = [
+    {
+      x: lastX,
+      y: lastY,
+      r: Math.random() * context.lineWidth,
+      color: colorPicker.value,
+    },
+    {
+      x: e.offsetX || e.touches[0].pageX,
+      y: e.offsetY || e.touches[0].pageY,
+      r: Math.random() * context.lineWidth,
+      color: colorPicker.value,
+    },
+  ];
+
+  context.beginPath();
+  for (let i = 1; i < points.length; i++) {
+    const p1 = points[i - 1];
+    const p2 = points[i];
+
+    const distance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+    const steps = Math.floor(distance / 2);
+    const stepX = Math.cos(angle) * 2;
+    const stepY = Math.sin(angle) * 2;
+
+    for (let j = 0; j < steps; j++) {
+      const x = p1.x + stepX * j + Math.random() * p1.r * 2 - p1.r;
+      const y = p1.y + stepY * j + Math.random() * p1.r * 2 - p1.r;
+      context.lineTo(x, y);
+    }
+  }
+
+  const blurAmount = document.querySelector("#blur-amount").value;
+  if (!isPrevTransparent) {
+    context.globalCompositeOperation = "soft-light";
+  } else {
+    context.globalCompositeOperation = "source-over";
+  }
+  context.strokeStyle = colorPicker.value;
+  context.filter = `blur(${blurAmount}px)`;
+  context.stroke();
+  context.filter = 'none';
+  context.closePath();
+
+  [lastX, lastY] = [e.offsetX || e.touches[0].pageX, e.offsetY || e.touches[0].pageY];
+}
+
+
+
+
+
+
+function updateGLCanvas() {
+  const glContext = glcanvas.getContext("2d");
+  glContext.clearRect(0, 0, glcanvas.width, glcanvas.height);
+  glContext.drawImage(canvas, 0, 0);
+}
+
+
+function createGradient(canvas, color1, color2, color3, angle) {
+  const context = canvas.getContext("2d");
+
+  // Create a linear gradient
+  let gradient;
+  switch (angle) {
+    case "to right":
+      gradient = context.createLinearGradient(0, 0, canvas.width, 0);
+      break;
+    case "to left":
+      gradient = context.createLinearGradient(canvas.width, 0, 0, 0);
+      break;
+    case "to top":
+      gradient = context.createLinearGradient(0, canvas.height, 0, 0);
+      break;
+    case "to bottom":
+      gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+      break;
+    case "to left top":
+      gradient = context.createLinearGradient(canvas.width, canvas.height, 0, 0);
+      break;
+    case "to right top":
+      gradient = context.createLinearGradient(0, canvas.height, canvas.width, 0);
+      break;
+    case "to right bottom":
+      gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+      break;
+    case "to left bottom":
+      gradient = context.createLinearGradient(canvas.width, 0, 0, canvas.height);
+      break;
+    default:
+      gradient = context.createLinearGradient(0, 0, canvas.width, 0);
+      break;
+  }
+  
+  gradient.addColorStop(0, color1);
+  gradient.addColorStop(0.5, color2);
+  gradient.addColorStop(1, color3);
+
+  // Fill the canvas with the gradient
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function stopDrawing() {
+  isDrawing = false;
+}
+
+function setCanvasSize() {
+  const newWidth = Number(canvasSize.value);
+  const currentWidth = canvas.width;
+  const currentHeight = canvas.height;
+  const aspectRatio = currentWidth / currentHeight;
+  const newHeight = Math.round(newWidth / aspectRatio);
+
+  // Set the canvas pixel dimensions
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+
+  // Set the canvas style dimensions using percentage values
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
+
+  // Redraw the canvas content
+  redrawCanvas();
+}
+
+function updateMouseCoordinates(e) {
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / canvasRect.width;
+  const scaleY = canvas.height / canvasRect.height;
+  mouseX = (e.clientX - canvasRect.left) * scaleX;
+  mouseY = (e.clientY - canvasRect.top) * scaleY;
+}
+
+
+
+
+function getCursorPosition(e, canvasElement) {
+  const rect = canvasElement.getBoundingClientRect();
+  const scaleX = canvasElement.width / rect.width;
+  const scaleY = canvasElement.height / rect.height;
+  
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY,
+  };
+}
+
+function webglDraw() {
+  // Get the WebGL context
+  const gl = canvas.getContext("webgl");
+  
+  // Set up the shaders
+  const vertexShaderSource = `
+    attribute vec2 a_position;
+    void main() {
+      gl_Position = vec4(a_position, 0.0, 1.0);
+    }
+  `;
+  const fragmentShaderSource = `
+    precision mediump float;
+    uniform vec4 u_color;
+    void main() {
+      gl_FragColor = u_color;
+    }
+  `;
+  const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertexShader, vertexShaderSource);
+  gl.compileShader(vertexShader);
+  const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fragmentShader, fragmentShaderSource);
+  gl.compileShader(fragmentShader);
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  gl.useProgram(program);
+  
+  // Set up the attributes and uniforms
+  const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  const colorUniformLocation = gl.getUniformLocation(program, "u_color");
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  const positions = [
+    0, 0,
+    0, 0.5,
+    0.7, 0,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(positionAttributeLocation);
+  gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+  
+  // Set the uniform values
+  gl.uniform4f(colorUniformLocation, 1, 0, 0, 1);
+  
+  // Draw the triangle
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+
+function clearCanvas() {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.style.background = "white";
+  context.globalCompositeOperation = "source-over";
+}
+
+
+
+function displacePixels() {
+  const width = canvas.width;
+  const height = canvas.height;
+  const originalImageData = context.getImageData(0, 0, width, height);
+  const displacedImageData = context.createImageData(width, height);
+
+  for (let i = 0; i < originalImageData.data.length; i += 4) {
+    const x = (i / 4) % width;
+    const y = Math.floor((i / 4) / width);
+
+    const newX = Math.floor(Math.random() * width);
+    const newY = Math.floor(Math.random() * height);
+
+    const newIndex = (newY * width + newX) * 4;
+
+    displacedImageData.data[newIndex] = originalImageData.data[i];
+    displacedImageData.data[newIndex + 1] = originalImageData.data[i + 1];
+    displacedImageData.data[newIndex + 2] = originalImageData.data[i + 2];
+    displacedImageData.data[newIndex + 3] = originalImageData.data[i + 3];
+  }
+
+  context.putImageData(displacedImageData, 0, 0);
+}
+
+function saveJpg() {
+  // Save current drawing state
+context.save();
+
+// Set destination-over composite operation
+context.globalCompositeOperation = "destination-over";
+
+// Draw white background
+context.fillStyle = "white";
+context.fillRect(0, 0, canvas.width, canvas.height);
+
+// Restore original drawing state
+context.restore();
+
+// Export and download canvas as JPG
+const link = document.createElement("a");
+link.download = "paint-canvas.jpg";
+link.href = canvas.toDataURL("image/jpeg", 1.0);
+link.click();
+
+}
+
+// Add event listener for the undo button
+const undoButton = document.querySelector("#undo");
+undoButton.addEventListener("click", undo);
+
+
+twirlButton.addEventListener("click", twistImage);
+clearCanvasBtn.addEventListener("click", clearCanvas);
+
+const crazyButton = document.querySelector("#crazy-button");
+crazyButton.addEventListener("click", drawCrazy);
+
+
+setCnavasSize.addEventListener("click", setCanvasSize);
+saveJPG.addEventListener("click", saveJpg);
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight - document.querySelector("#controls").clientHeight;
+});
+window.dispatchEvent(new Event("resize"));
+</script>
+  </body>
+</html>
